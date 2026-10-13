@@ -7,12 +7,16 @@ import requests
 
 log = logging.getLogger(__name__)
 
+# Rough EUR-based defaults so a scan never crashes on a missing rate; config/live rates override.
+DEFAULT_EUR = {"USD": 0.86, "GBP": 1.16, "JPY": 0.0057, "CHF": 1.07, "CAD": 0.62, "AUD": 0.57}
+
 
 class FX:
     def __init__(self, base: str, fallback: dict, live: bool = True):
         self.base = base.upper()
         # fallback: units of BASE per 1 unit of currency, e.g. {"USD": 0.86}
-        self.rates = {k.upper(): float(v) for k, v in (fallback or {}).items()}
+        self.rates = dict(DEFAULT_EUR) if self.base == "EUR" else {}
+        self.rates.update({k.upper(): float(v) for k, v in (fallback or {}).items()})
         self.rates[self.base] = 1.0
         if live:
             try:

@@ -59,6 +59,7 @@ pricecharting:                # graded guide prices (paid subscription API token
 alerts:                       # optional push notifications for new deals
   min_score: 0.2
   min_confidence: medium      # don't push thin-comp deals to your phone
+  report_url: ${VDF_REPORT_URL}   # adds an "All deals" button to alerts (your serve or Pages URL)
   discord_webhook: ${DISCORD_WEBHOOK}
   telegram_bot_token: ${TELEGRAM_BOT_TOKEN}
   telegram_chat_id: ${TELEGRAM_CHAT_ID}

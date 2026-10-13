@@ -3,6 +3,7 @@
   python -m vdf scan [--demo] [--config config.yaml] [--watchlist watchlist.yaml]
   python -m vdf import-csv FILE.csv          # add sold comps to history
   python -m vdf targets                      # list what will be hunted
+  python -m vdf serve [--scan-every 30] [--key SECRET]   # phone-friendly web app on your LAN
 """
 from __future__ import annotations
 
@@ -48,12 +49,18 @@ def main(argv=None):
     ap.add_argument("-v", "--verbose", action="store_true")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sc = sub.add_parser("scan", help="fetch, value and report deals")
-    sc.add_argument("--demo", action="store_true", help="synthetic data, no API keys needed")
-    sc.add_argument("--out", default="reports", help="output directory for HTML/CSV")
     sc.add_argument("--loop", type=int, default=0, metavar="MIN", help="repeat every MIN minutes")
     ic = sub.add_parser("import-csv", help="import sold comps from CSV into history")
     ic.add_argument("files", nargs="+")
     sub.add_parser("targets", help="list watchlist targets")
+    sv = sub.add_parser("serve", help="host the report for your phone, with a Scan-now button")
+    sv.add_argument("--host", default="0.0.0.0")
+    sv.add_argument("--port", type=int, default=8000)
+    sv.add_argument("--scan-every", type=int, default=0, metavar="MIN", help="also scan automatically every MIN minutes")
+    sv.add_argument("--key", default=os.environ.get("VDF_KEY", ""), help="access key required in the URL (recommended)")
+    for p_ in (sc, sv):
+        p_.add_argument("--demo", action="store_true", help="synthetic data, no API keys needed")
+        p_.add_argument("--out", default="reports", help="output directory for the web app + CSV")
     a = ap.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG if a.verbose else logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -77,26 +84,35 @@ def main(argv=None):
             print(f"{f}: {n} new sales stored ({len(sales)} parsed, {len(listings)} listing rows ignored); rejected: {rej}")
         return
 
-    if a.demo:
-        cfg = {**cfg, "database": str(Path(a.out) / "demo-history.sqlite"), "imports_dir": "__none__"}
-        Path(cfg["database"]).unlink(missing_ok=True)
+    out = Path(a.out)
+    if a.cmd == "serve":
+        from .server import serve
+        serve(out, lambda: scan_once(cfg, watch, a.demo, out), a.host, a.port, a.scan_every, a.key)
+        return
     while True:
-        store = Store(cfg.get("database", "data/history.sqlite"))
-        res = run(cfg, watch, demo=a.demo, store=store)
-        out = Path(a.out)
-        base = cfg.get("fx", {}).get("base", "EUR")
-        report.write_html(res, out / "deals.html", cfg.get("deals", {}), base)
-        report.write_csv(res, out / "deals.csv")
-        print(report.console(res))
-        print(f"\nReport: {out / 'deals.html'}  CSV: {out / 'deals.csv'}")
-        if not a.demo:
-            n = report.send_alerts(res, cfg.get("alerts", {}), store)
-            if n:
-                print(f"{n} alert(s) sent")
+        scan_once(cfg, watch, a.demo, out, verbose=True)
         if not a.loop:
             break
         time.sleep(a.loop * 60)
 
+
+def scan_once(cfg: dict, watch: list, demo: bool, out: Path, verbose: bool = False):
+    if demo:
+        cfg = {**cfg, "database": str(out / "demo-history.sqlite"), "imports_dir": "__none__"}
+        Path(cfg["database"]).unlink(missing_ok=True)
+    store = Store(cfg.get("database", "data/history.sqlite"))
+    res = run(cfg, watch, demo=demo, store=store)
+    base = cfg.get("fx", {}).get("base", "EUR")
+    page = report.write_html(res, out, cfg.get("deals", {}), base)
+    report.write_csv(res, out / "deals.csv")
+    if verbose:
+        print(report.console(res))
+        print(f"\nReport: {page}  CSV: {out / 'deals.csv'}")
+    if not demo:
+        n = report.send_alerts(res, cfg.get("alerts", {}), store)
+        if n:
+            logging.getLogger("vdf").info("%d alert(s) sent", n)
+    return res
 
 if __name__ == "__main__":
     main()

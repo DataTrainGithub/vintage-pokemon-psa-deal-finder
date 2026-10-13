@@ -1,13 +1,16 @@
-"""Console, CSV and self-contained HTML output + optional Discord/Telegram alerts."""
+"""Console, CSV and mobile-first web app output + Discord/Telegram alerts formatted for phones."""
 from __future__ import annotations
 
 import csv
+import html
 import logging
+import shutil
 from pathlib import Path
 
 import requests
 from jinja2 import Environment
 
+from .catalog import SETS
 from .scanner import ScanResult
 from .store import Store
 
@@ -50,67 +53,78 @@ def write_csv(res: ScanResult, path: Path):
                         l.currency, l.shipping, l.seller_country, l.is_auction, l.url, l.title, "; ".join(d.notes)])
 
 
-HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Vintage PSA Deals</title>
-<style>
-:root{--bg:#fafaf9;--fg:#1c1917;--muted:#78716c;--card:#fff;--line:#e7e5e4;--good:#15803d;--warn:#b45309;--accent:#1d4ed8}
-@media (prefers-color-scheme:dark){:root{--bg:#1c1917;--fg:#f5f5f4;--muted:#a8a29e;--card:#292524;--line:#44403c;--good:#4ade80;--warn:#fbbf24;--accent:#93c5fd}}
-body{background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif;margin:0;padding:24px 16px}
-main{max-width:1200px;margin:auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:28px 0 8px}
-.muted{color:var(--muted)}.wrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
-table{border-collapse:collapse;width:100%}th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
-th{font-weight:600;cursor:pointer;position:sticky;top:0;background:var(--card)}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.good{color:var(--good);font-weight:600}.warn{color:var(--warn)}a{color:var(--accent)}
-.pill{display:inline-block;padding:1px 7px;border-radius:99px;border:1px solid var(--line);font-size:12px}
-</style></head><body><main>
-<h1>Vintage PSA 9/10 deals</h1>
-<div class="muted">Scan {{ res.started.strftime('%Y-%m-%d %H:%M') }} UTC · landed cost {{ money(cfg.price_min) }}–{{ money(cfg.price_max) }} · ≥{{ (cfg.min_discount*100)|round|int }}% under FMV · prices in {{ base }}</div>
-<h2>Deals ({{ res.deals|length }})</h2>
-<div class="wrap"><table class="sortable"><thead><tr>
-<th class="n">Score</th><th class="n">Discount</th><th class="n">Landed cost</th><th class="n">FMV</th><th class="n">Savings</th>
-<th>Confidence</th><th>Card</th><th>Source</th><th>Listing</th><th>Notes</th></tr></thead><tbody>
-{% for d in res.deals %}<tr>
-<td class="n">{{ '%.2f'|format(d.score) }}</td><td class="n good">{{ (d.discount*100)|round|int }}%</td>
-<td class="n">{{ money(d.landed_cost, base) }}</td><td class="n">{{ money(d.valuation.fmv, base) }}</td>
-<td class="n">{{ money(d.savings, base) }}</td>
-<td><span class="pill">{{ d.valuation.confidence }}</span> <span class="muted">{{ d.valuation.method }}</span></td>
-<td>{{ d.listing.key.label(d.listing.name) }}</td><td>{{ d.listing.source }}{% if d.listing.seller_country %} · {{ d.listing.seller_country }}{% endif %}</td>
-<td><a href="{{ d.listing.url }}" target="_blank" rel="noopener">{{ money(d.listing.price, d.listing.currency) }}{% if d.listing.shipping %} + {{ money(d.listing.shipping, d.listing.currency) }}{% endif %}</a></td>
-<td class="warn">{{ d.notes|join('; ') }}</td></tr>
-{% else %}<tr><td colspan="10" class="muted">No listings beat the thresholds this run.</td></tr>{% endfor %}
-</tbody></table></div>
-<h2>Market overview</h2>
-<div class="wrap"><table class="sortable"><thead><tr><th>Card</th><th class="n">FMV</th><th>Confidence</th><th class="n">Comps</th>
-<th>Last sale</th><th class="n">Listings</th><th class="n">Cheapest landed</th><th class="n">vs FMV</th><th class="n">Raw CM trend</th></tr></thead><tbody>
-{% for m in res.market %}<tr><td>{{ m.target.key.label(m.target.name) }}</td><td class="n">{{ money(m.valuation.fmv, base) }}</td>
-<td><span class="pill">{{ m.valuation.confidence }}</span></td><td class="n">{{ m.valuation.n_comps }}</td>
-<td>{{ m.valuation.last_sale.strftime('%Y-%m-%d') if m.valuation.last_sale else '—' }}</td><td class="n">{{ m.listings }}</td>
-<td class="n">{% if m.cheapest %}<a href="{{ m.cheapest.listing.url }}" target="_blank" rel="noopener">{{ money(m.cheapest.landed_cost, base) }}</a>{% else %}—{% endif %}</td>
-<td class="n {{ 'good' if m.cheapest and m.cheapest.discount > 0 else '' }}">{{ ('%+d%%'|format((-m.cheapest.discount*100)|round|int)) if m.cheapest else '—' }}</td>
-<td class="n">{{ money(m.raw_trend, 'EUR') if m.raw_trend else '—' }}</td></tr>{% endfor %}
-</tbody></table></div>
-<p class="muted">FMV = recency-weighted median of sold PSA comps (outliers removed), guide prices weighted lower. Always check the slab photo, cert number (psacard.com/cert) and seller feedback before buying.</p>
-</main><script>
-document.querySelectorAll('table.sortable th').forEach((th,i)=>th.addEventListener('click',()=>{
- const tb=th.closest('table').tBodies[0],rows=[...tb.rows],asc=th.dataset.asc!=='1';th.dataset.asc=asc?'1':'0';
- const val=r=>{const t=r.cells[i]?.innerText||'';const n=parseFloat(t.replace(/[^0-9.+-]/g,''));return isNaN(n)?t:n};
- rows.sort((a,b)=>{const x=val(a),y=val(b);return (x>y?1:x<y?-1:0)*(asc?1:-1)});rows.forEach(r=>tb.appendChild(r));}));
-</script></body></html>"""
+WEB = Path(__file__).parent / "web"
+STATIC = ["manifest.webmanifest", "sw.js", "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png"]
+EDITION = {"1st": "1st Edition", "shadowless": "Shadowless", "unlimited": "Unlimited"}
 
 
-def write_html(res: ScanResult, path: Path, deal_cfg: dict, base: str):
-    path.parent.mkdir(parents=True, exist_ok=True)
+def _card(key, name):
+    s = SETS.get(key.set_code)
+    return {"name": name or f"#{key.number}", "set": s.name if s else key.set_code, "number": key.number,
+            "edition": EDITION.get(key.variant, key.variant), "grade": key.grade}
+
+
+def _iso(dt):
+    return dt.isoformat() if dt else None
+
+
+def web_data(res: ScanResult, deal_cfg: dict, base: str) -> dict:
+    raw = {m.target.key: m.raw_trend for m in res.market}
+    deals = []
+    for d in res.deals:
+        l, v = d.listing, d.valuation
+        deals.append({**_card(l.key, l.name), "score": round(d.score, 4), "discount": round(d.discount, 4),
+                      "cost": round(d.landed_cost, 2), "fmv": round(v.fmv, 2), "savings": round(d.savings, 2),
+                      "conf": v.confidence, "ncomps": v.n_comps, "method": v.method, "last_sale": _iso(v.last_sale),
+                      "source": l.source, "country": l.seller_country, "price": l.price, "cur": l.currency,
+                      "ship": l.shipping, "auction": l.is_auction, "ends": _iso(l.ends_at), "url": l.url,
+                      "title": l.title, "notes": d.notes, "import_vat": any("import VAT" in n for n in d.notes),
+                      "raw": raw.get(l.key)})
+    market = []
+    for m in res.market:
+        v, c = m.valuation, m.cheapest
+        market.append({**_card(m.target.key, m.target.name), "fmv": round(v.fmv, 2) if v.fmv else None,
+                       "conf": v.confidence, "ncomps": v.n_comps, "last_sale": _iso(v.last_sale),
+                       "listings": m.listings, "cheapest": round(c.landed_cost, 2) if c else None,
+                       "vs": round(c.discount, 4) if c else None, "url": c.listing.url if c else None,
+                       "raw": m.raw_trend})
     cfg = {"price_min": 1000, "price_max": 10000, "min_discount": 0.2, **deal_cfg}
+    return {"scanned": res.started.isoformat(), "base": base, "deals": deals, "market": market,
+            "cfg": {k: cfg[k] for k in ("price_min", "price_max", "min_discount")}}
+
+
+def write_html(res: ScanResult, out_dir: Path, deal_cfg: dict, base: str) -> Path:
+    """Write the phone-friendly web app (index.html + PWA files) into out_dir."""
+    out_dir.mkdir(parents=True, exist_ok=True)
     env = Environment(autoescape=True)
-    path.write_text(env.from_string(HTML).render(res=res, cfg=cfg, base=base,
-                                                 money=lambda v, c=base: money(v, c)))
+    page = env.from_string((WEB / "app.html").read_text()).render(data=web_data(res, deal_cfg, base))
+    tmp = out_dir / "index.html.tmp"
+    tmp.write_text(page)
+    tmp.replace(out_dir / "index.html")  # atomic, so a phone never loads a half-written page
+    for f in STATIC:
+        shutil.copyfile(WEB / f, out_dir / f)
+    return out_dir / "index.html"
 
 
-def send_alerts(res: ScanResult, cfg: dict, store: Store) -> int:
+def _alert_text(d) -> str:
+    l, v = d.listing, d.valuation
+    c = _card(l.key, l.name)
+    src = "Cardmarket" if "cardmarket" in l.source else "eBay" if "ebay" in l.source else l.source
+    lines = [f"<b>−{d.discount:.0%} · {html.escape(c['name'])} PSA {c['grade']}</b>",
+             f"{html.escape(c['set'])} #{c['number']} · {c['edition']}",
+             f"Delivered <b>{money(d.landed_cost, v.currency)}</b> · FMV {money(v.fmv, v.currency)} · save {money(d.savings, v.currency)}",
+             f"{src}{' · ' + l.seller_country if l.seller_country else ''} · {v.confidence} confidence ({v.n_comps} sales)"]
+    if d.notes:
+        lines.append("⚠️ " + html.escape("; ".join(d.notes)))
+    return "\n".join(lines)
+
+
+def send_alerts(res: ScanResult, cfg: dict, store: Store, report_url: str = "") -> int:
     hook = cfg.get("discord_webhook")
     tg_token, tg_chat = cfg.get("telegram_bot_token"), cfg.get("telegram_chat_id")
     if not (hook or (tg_token and tg_chat)):
         return 0
+    report_url = report_url or cfg.get("report_url", "")
     min_score = cfg.get("min_score", 0.2)
     ok_conf = {"low": {"low", "medium", "high"}, "medium": {"medium", "high"}, "high": {"high"}}[cfg.get("min_confidence", "medium")]
     sent = 0
@@ -118,14 +132,21 @@ def send_alerts(res: ScanResult, cfg: dict, store: Store) -> int:
         l = d.listing
         if d.score < min_score or d.valuation.confidence not in ok_conf or store.was_alerted(l.source, l.item_id or l.url, l.price):
             continue
-        msg = (f"{l.key.label(l.name)}\n{d.discount:.0%} under FMV ({money(d.landed_cost)} vs {money(d.valuation.fmv)}, "
-               f"{d.valuation.confidence} confidence, {d.valuation.method})\n{l.source} · {l.url}")
+        text = _alert_text(d)
         try:
-            if hook:
-                requests.post(hook, json={"content": msg}, timeout=15).raise_for_status()
             if tg_token and tg_chat:
-                requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage",
-                              json={"chat_id": tg_chat, "text": msg}, timeout=15).raise_for_status()
+                buttons = [[{"text": "Open listing ↗", "url": l.url}]]
+                if report_url:
+                    buttons[0].append({"text": "All deals", "url": report_url})
+                requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage", timeout=15, json={
+                    "chat_id": tg_chat, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True,
+                    "reply_markup": {"inline_keyboard": buttons}}).raise_for_status()
+            if hook:
+                plain = html.unescape(text.replace("<b>", "**").replace("</b>", "**"))
+                title, _, body = plain.partition("\n")
+                requests.post(hook, timeout=15, json={"embeds": [{
+                    "title": title.strip("*"), "url": l.url, "description": body + (f"\n[All deals]({report_url})" if report_url else ""),
+                    "color": 0x157A3C}]}).raise_for_status()
             store.mark_alerted(l.source, l.item_id or l.url, l.price)
             sent += 1
         except Exception as e:

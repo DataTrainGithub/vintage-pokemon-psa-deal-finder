@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f5f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151413" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PSA Deals">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>PSA Deals</title>
+<style>
+:root{
+  --bg:#f6f5f3;--surface:#fff;--surface2:#efede9;--fg:#1b1a19;--muted:#6f6a64;--line:#e3e0db;
+  --accent:#1f4fd1;--accent-fg:#fff;--good:#157a3c;--good-bg:#e3f4e8;--warn:#9a5b00;--warn-bg:#fbf0dc;
+  --chip-on:#1b1a19;--chip-on-fg:#fff;--seg-on:#fff;--radius:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#151413;--surface:#201f1d;--surface2:#2a2826;--fg:#f3f1ee;--muted:#a39d96;--line:#34312e;
+  --accent:#8fb0ff;--accent-fg:#0d1530;--good:#5fd38a;--good-bg:#173323;--warn:#f2be62;--warn-bg:#3a2c12;
+  --chip-on:#f3f1ee;--chip-on-fg:#151413;--seg-on:#4a4641;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+button,select,input{font:inherit;color:inherit}
+a{color:var(--accent)}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) 16px 8px}
+.wrap{max-width:980px;margin:0 auto}
+.top{display:flex;align-items:center;gap:10px}
+.top h1{font-size:18px;margin:0;flex:1;letter-spacing:-.01em}
+.sub{font-size:13px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{min-width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;cursor:pointer}
+.iconbtn:disabled{opacity:.55}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface2);border-radius:12px;padding:3px;margin-top:8px}
+.seg button{height:38px;border:0;border-radius:10px;background:transparent;font-weight:600;cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--seg-on);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tools{display:flex;gap:8px}
+.tools input{flex:1;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 12px}
+.tools select{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 8px;max-width:42%}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-fg);border-color:var(--chip-on)}
+main{padding:14px 16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.list{display:grid;gap:12px}
+@media (min-width:760px){.list{grid-template-columns:1fr 1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{font-weight:800;font-size:18px;color:var(--good);background:var(--good-bg);border-radius:10px;padding:3px 9px;font-variant-numeric:tabular-nums}
+.pill{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:2px 8px;color:var(--muted)}
+.pill.high{color:var(--good);border-color:currentColor}.pill.low{color:var(--warn);border-color:currentColor}
+.src{margin-left:auto;font-size:13px;color:var(--muted)}
+.name{font-size:17px;font-weight:700;line-height:1.25}
+.meta{font-size:14px;color:var(--muted)}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface2);border-radius:12px;padding:10px}
+.nums div span{display:block;font-size:12px;color:var(--muted)}
+.nums div b{font-size:16px;font-variant-numeric:tabular-nums}
+.nums .save b{color:var(--good)}
+.notes{font-size:13px;color:var(--warn);background:var(--warn-bg);border-radius:10px;padding:7px 10px}
+.go{display:flex;align-items:center;justify-content:center;height:48px;border-radius:12px;background:var(--accent);color:var(--accent-fg);
+  font-weight:700;text-decoration:none}
+details{font-size:14px;color:var(--muted)}
+details summary{cursor:pointer;min-height:32px;display:flex;align-items:center}
+details p{margin:4px 0;word-break:break-word}
+.mrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.mrow .r{text-align:right;font-variant-numeric:tabular-nums}
+.mrow .vs{font-size:13px}.vs.good{color:var(--good);font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:40px 16px}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;background:var(--fg);color:var(--bg);
+  border-radius:12px;padding:12px 14px;font-size:14px;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+footer{font-size:12px;color:var(--muted);padding:8px 16px 0;max-width:980px;margin:0 auto}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="top">
+    <div style="flex:1;min-width:0"><h1>Vintage PSA deals</h1><div class="sub" id="sub"></div></div>
+    <button class="iconbtn" id="scan" hidden aria-label="Scan now">⟳ <span>Scan</span></button>
+    <button class="iconbtn" id="reload" aria-label="Reload">⟳</button>
+  </div>
+  <div class="seg" role="tablist">
+    <button role="tab" id="t-deals" aria-selected="true">Deals</button>
+    <button role="tab" id="t-market" aria-selected="false">Market</button>
+  </div>
+</div></header>
+<main class="wrap">
+  <div class="tools">
+    <input id="q" type="search" placeholder="Search card or set" autocomplete="off" enterkeyhint="search">
+    <select id="sort" aria-label="Sort"></select>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="stats" id="stats"></div>
+  <div class="list" id="list"></div>
+</main>
+<footer><span id="window"></span>FMV = recency-weighted median of sold PSA comps, outliers removed. Before buying: check slab photos, the cert on psacard.com/cert and seller feedback.</footer>
+<div class="toast" id="toast"></div>
+<script type="application/json" id="data">{{ data|tojson }}</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = new Intl.NumberFormat(undefined, {style:'currency', currency:D.base, maximumFractionDigits:0});
+const money = (v, cur) => v == null ? '—' : (cur && cur !== D.base
+  ? new Intl.NumberFormat(undefined, {style:'currency', currency:cur, maximumFractionDigits:0}).format(v) : fmt.format(v));
+const pct = v => `${v > 0 ? '−' : '+'}${Math.abs(Math.round(v * 100))}%`;
+const ago = iso => { if (!iso) return '—'; const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m/60)} h ago` : `${Math.round(m/1440)} d ago`; };
+const srcLabel = s => /cardmarket/i.test(s) ? 'Cardmarket' : /ebay/i.test(s) ? 'eBay' : s;
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem('vdf.' + k)) ?? d; } catch { return d; } },
+                set(k, v) { try { localStorage.setItem('vdf.' + k, JSON.stringify(v)); } catch {} } };
+
+const FILTERS = {
+  deals: [['psa10','PSA 10', d => d.grade === 10], ['psa9','PSA 9', d => d.grade === 9],
+          ['cm','Cardmarket', d => /cardmarket/i.test(d.source)], ['ebay','eBay', d => /ebay/i.test(d.source)],
+          ['eu','EU sellers', d => !d.import_vat], ['conf','Medium+ confidence', d => d.conf !== 'low'],
+          ['bin','Buy now only', d => !d.auction]],
+  market: [['psa10','PSA 10', m => m.grade === 10], ['psa9','PSA 9', m => m.grade === 9],
+           ['listed','Has listings', m => m.listings > 0], ['under','Below FMV', m => m.vs > 0]],
+};
+const SORTS = {
+  deals: [['score','Best score', (a,b) => b.score - a.score], ['disc','Biggest discount', (a,b) => b.discount - a.discount],
+          ['save','Most savings', (a,b) => b.savings - a.savings], ['low','Lowest price', (a,b) => a.cost - b.cost],
+          ['high','Highest price', (a,b) => b.cost - a.cost]],
+  market: [['vs','Nearest deal', (a,b) => (b.vs ?? -9) - (a.vs ?? -9)], ['fmv','Highest FMV', (a,b) => (b.fmv ?? 0) - (a.fmv ?? 0)],
+           ['name','Name', (a,b) => a.name.localeCompare(b.name)]],
+};
+let tab = store.get('tab', 'deals');
+let state = store.get('state', {deals:{f:[], s:'score'}, market:{f:[], s:'vs'}});
+
+function render() {
+  const st = state[tab];
+  $('#t-deals').setAttribute('aria-selected', tab === 'deals');
+  $('#t-market').setAttribute('aria-selected', tab === 'market');
+  $('#sort').innerHTML = SORTS[tab].map(([k, l]) => `<option value="${k}" ${k === st.s ? 'selected' : ''}>${l}</option>`).join('');
+  $('#chips').innerHTML = FILTERS[tab].map(([k, l]) =>
+    `<button class="chip" data-k="${k}" aria-pressed="${st.f.includes(k)}">${l}</button>`).join('');
+  const q = $('#q').value.trim().toLowerCase();
+  let rows = (tab === 'deals' ? D.deals : D.market).filter(r =>
+    FILTERS[tab].every(([k, , fn]) => !st.f.includes(k) || fn(r)) &&
+    (!q || `${r.name} ${r.set} ${r.edition} psa ${r.grade}`.toLowerCase().includes(q)));
+  const sorter = (SORTS[tab].find(([k]) => k === st.s) || SORTS[tab][0])[2];
+  rows.sort(sorter);
+  $('#list').innerHTML = rows.length ? rows.map(tab === 'deals' ? dealCard : marketRow).join('')
+    : `<div class="empty">${tab === 'deals' ? 'No deals match. Try clearing filters.' : 'Nothing matches.'}</div>`;
+  $('#stats').hidden = tab !== 'deals';
+}
+
+function dealCard(d) {
+  const ship = d.ship ? ` + ${money(d.ship, d.cur)} ship` : '';
+  const ends = d.auction && d.ends ? ` · ends ${new Date(d.ends).toLocaleString([], {weekday:'short', hour:'2-digit', minute:'2-digit'})}` : '';
+  return `<article class="card">
+    <div class="row"><span class="badge">${pct(d.discount)}</span>
+      <span class="pill ${d.conf}">${d.conf} · ${d.ncomps} sales</span>
+      ${d.auction ? '<span class="pill low">auction</span>' : ''}
+      <span class="src">${esc(srcLabel(d.source))}${d.country ? ' · ' + esc(d.country) : ''}</span></div>
+    <div><div class="name">${esc(d.name || '#' + d.number)}</div>
+      <div class="meta">${esc(d.set)} · #${esc(d.number)} · ${esc(d.edition)} · <b>PSA ${d.grade}</b></div></div>
+    <div class="nums"><div><span>Delivered</span><b>${money(d.cost)}</b></div>
+      <div><span>Market value</span><b>${money(d.fmv)}</b></div>
+      <div class="save"><span>You save</span><b>${money(d.savings)}</b></div></div>
+    ${d.notes.length ? `<div class="notes">${d.notes.map(esc).join(' · ')}</div>` : ''}
+    <a class="go" href="${esc(d.url)}" target="_blank" rel="noopener">Open on ${esc(srcLabel(d.source))} ↗</a>
+    <details><summary>Details</summary>
+      <p>Listed at ${money(d.price, d.cur)}${ship}${ends}</p>
+      <p>FMV from ${esc(d.method)}${d.last_sale ? ', last sale ' + ago(d.last_sale) : ''}${d.raw ? ' · raw Cardmarket trend ' + money(d.raw) : ''}</p>
+      <p>${esc(d.title)}</p></details>
+  </article>`;
+}
+
+function marketRow(m) {
+  const vs = m.vs == null ? '<span class="vs">no listings</span>'
+    : `<a class="vs ${m.vs > 0 ? 'good' : ''}" href="${esc(m.url)}" target="_blank" rel="noopener">${money(m.cheapest)} (${pct(m.vs)})</a>`;
+  return `<div class="mrow">
+    <div><div class="name" style="font-size:15px">${esc(m.name)} <span class="meta">PSA ${m.grade}</span></div>
+      <div class="meta">${esc(m.set)} · #${esc(m.number)} · ${esc(m.edition)}</div></div>
+    <div class="r"><b>${money(m.fmv)}</b><div class="meta"><span class="pill ${m.conf}">${m.conf}</span> ${m.ncomps} sales</div></div>
+    <div class="meta">${m.listings} listing${m.listings === 1 ? '' : 's'}${m.last_sale ? ' · last sale ' + ago(m.last_sale) : ''}</div>
+    <div class="r">${vs}</div></div>`;
+}
+
+function header() {
+  $('#sub').textContent = `Updated ${ago(D.scanned)} · ${D.deals.length} deal${D.deals.length === 1 ? '' : 's'}`;
+  $('#window').textContent = `Showing listings delivered for ${money(D.cfg.price_min)}–${money(D.cfg.price_max)} and ≥${Math.round(D.cfg.min_discount * 100)}% under market value. `;
+  const best = D.deals.reduce((m, d) => Math.max(m, d.discount), 0);
+  const save = D.deals.reduce((s, d) => s + Math.max(d.savings, 0), 0);
+  $('#stats').innerHTML = `<div class="stat"><b>${D.deals.length}</b><span>deals</span></div>
+    <div class="stat"><b>${D.deals.length ? pct(best) : '—'}</b><span>best discount</span></div>
+    <div class="stat"><b>${D.market.filter(m => m.fmv != null).length}</b><span>cards valued</span></div>`;
+}
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3500); }
+
+$('#t-deals').onclick = () => { tab = 'deals'; store.set('tab', tab); render(); };
+$('#t-market').onclick = () => { tab = 'market'; store.set('tab', tab); render(); };
+$('#sort').onchange = e => { state[tab].s = e.target.value; store.set('state', state); render(); };
+$('#q').oninput = render;
+$('#chips').onclick = e => { const b = e.target.closest('.chip'); if (!b) return; const f = state[tab].f, k = b.dataset.k;
+  state[tab].f = f.includes(k) ? f.filter(x => x !== k) : [...f, k]; store.set('state', state); render(); };
+$('#reload').onclick = () => location.reload();
+
+// "Scan now" only exists when served by `python -m vdf serve`.
+(async () => {
+  try {
+    const r = await fetch('api/status', {cache: 'no-store'}); if (!r.ok) return;
+    const btn = $('#scan'); btn.hidden = false; $('#reload').hidden = true;
+    const poll = async () => { const s = await (await fetch('api/status', {cache:'no-store'})).json();
+      btn.disabled = s.running; btn.querySelector('span').textContent = s.running ? 'Scanning…' : 'Scan';
+      if (s.running) setTimeout(poll, 3000);
+      else if (s.last_scan && s.last_scan !== D.scanned) location.reload();
+      else if (s.error) toast('Scan failed: ' + s.error); };
+    btn.onclick = async () => { const r = await fetch('api/scan', {method:'POST'}); toast(r.ok ? 'Scan started' : 'Could not start scan'); poll(); };
+    poll();
+  } catch {}
+})();
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+
+header(); render();
+</script>
+</body>
+</html>

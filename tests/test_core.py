@@ -242,5 +242,89 @@ class CsvAndPipelineTests(unittest.TestCase):
             "base1|4|1st|PSA9|EN", "base1|4|1st|PSA10|EN", "base1|4|shadowless|PSA9|EN", "base1|4|shadowless|PSA10|EN"])
 
 
+class MobileOutputTests(unittest.TestCase):
+    def _result(self, d):
+        cfg = {"database": str(Path(d) / "h.sqlite"), "imports_dir": "__none__",
+               "fx": {"base": "EUR", "live": False}}
+        return run(cfg, [{"name": "Charizard", "set": "base1", "number": 4, "variants": ["shadowless"]}],
+                   demo=True, store=Store(cfg["database"]), now=NOW)
+
+    def test_web_app_written(self):
+        from vdf import report
+        with tempfile.TemporaryDirectory() as d:
+            res = self._result(d)
+            page = report.write_html(res, Path(d) / "site", {}, "EUR")
+            html_ = page.read_text()
+            self.assertIn('name="viewport"', html_)
+            self.assertIn('rel="manifest"', html_)
+            for f in report.STATIC:
+                self.assertTrue((Path(d) / "site" / f).exists(), f)
+            data = report.web_data(res, {}, "EUR")
+            self.assertEqual(len(data["market"]), 2)
+            self.assertEqual(data["scanned"], NOW.isoformat())
+
+    def test_json_cannot_break_out_of_script(self):
+        from vdf import report
+        with tempfile.TemporaryDirectory() as d:
+            res = self._result(d)
+            res.market[0].target.name = "</script><img src=x onerror=alert(1)>"
+            html_ = report.write_html(res, Path(d) / "site", {}, "EUR").read_text()
+            self.assertNotIn("</script><img", html_)
+
+    def test_telegram_alert_has_button_and_dedupes(self):
+        from vdf import report
+        with tempfile.TemporaryDirectory() as d:
+            res = self._result(d)
+            l = Listing("cardmarket", ZARD_SL9, "t", 3000, "EUR", "https://cm/x", seller_country="DE", name="Charizard")
+            v = fair_value([Sale("t", ZARD_SL9, 5000, "EUR", NOW - timedelta(days=i)) for i in range(8)], FXR, NOW)
+            res.deals = [score(l, v, FXR, {})]
+            store = Store(Path(d) / "a.sqlite")
+            cfg = {"telegram_bot_token": "T", "telegram_chat_id": "1", "report_url": "https://me/deals"}
+            with mock.patch("vdf.report.requests.post") as post:
+                self.assertEqual(report.send_alerts(res, cfg, store), 1)
+                self.assertEqual(report.send_alerts(res, cfg, store), 0)  # already alerted
+            body = post.call_args.kwargs["json"]
+            self.assertEqual(body["parse_mode"], "HTML")
+            self.assertIn("Charizard PSA 9", body["text"])
+            self.assertEqual([b["url"] for b in body["reply_markup"]["inline_keyboard"][0]], ["https://cm/x", "https://me/deals"])
+
+
+class ServerTests(unittest.TestCase):
+    def test_key_required_and_scan_endpoint(self):
+        import threading
+        import urllib.error
+        import urllib.request
+        from functools import partial
+        from http.server import ThreadingHTTPServer
+        from vdf.server import Handler, Scanner
+
+        class R:
+            started = NOW
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "index.html").write_text("ok")
+            scanner = Scanner(lambda: R())
+            h = type("H", (Handler,), {"scanner": scanner, "key": "s3cret"})
+            srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(h, directory=d))
+            threading.Thread(target=srv.serve_forever, daemon=True).start()
+            base = f"http://127.0.0.1:{srv.server_address[1]}"
+            try:
+                with self.assertRaises(urllib.error.HTTPError) as e:
+                    urllib.request.urlopen(base + "/")
+                self.assertEqual(e.exception.code, 401)
+                r = urllib.request.urlopen(base + "/?key=s3cret")
+                self.assertEqual(r.read(), b"ok")
+                self.assertIn("vdf_key=s3cret", r.headers["Set-Cookie"])
+                req = urllib.request.Request(base + "/api/scan", method="POST", headers={"Cookie": "vdf_key=s3cret"})
+                self.assertEqual(urllib.request.urlopen(req).status, 202)
+                for _ in range(50):
+                    if not scanner.running:
+                        break
+                    import time; time.sleep(0.02)
+                self.assertEqual(scanner.status()["last_scan"], NOW.isoformat())
+            finally:
+                srv.shutdown()
+                srv.server_close()
+
+
 if __name__ == "__main__":
     unittest.main()

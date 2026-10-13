@@ -6,9 +6,9 @@ source, eBay is the second, and fair value comes from sold comps.
 
 ```
 watchlist.yaml ──► sources ─────────────────► parse & verify ─► history DB ─► fair value ─► landed cost ─► deals
-                   Cardmarket (listings)       strict title/      (SQLite,     recency-     + shipping     HTML / CSV
-                   eBay (listings + solds)     comment parser     grows every  weighted     + import VAT   Discord /
-                   PriceCharting (guide)                          run)         median                      Telegram
+                   Cardmarket (listings)       strict title/      (SQLite,     recency-     + shipping     phone web app
+                   eBay (listings + solds)     comment parser     grows every  weighted     + import VAT   Telegram/Discord
+                   PriceCharting (guide)                          run)         median                      push + CSV
                    CSV imports (any solds)
 ```
 
@@ -31,6 +31,38 @@ watchlist.yaml ──► sources ───────────────�
    - Score = discount × confidence, where confidence comes from comp count and price spread.
    - Auctions are marked, because the current bid is not the final price.
 
+## Using it on your phone
+
+The tool is built to be used from a phone. The scan runs on a computer or server, and you use
+the results on the phone.
+
+| | What you get on the phone | How |
+|---|---|---|
+| **Push alerts** | A Telegram or Discord message for each new deal, showing the discount, delivered price, market value and an **Open listing** button | Set `alerts:` in the config (Telegram bot: talk to @BotFather, get the chat id from @userinfobot) |
+| **Web app** | A phone-first page with a deal card per listing, filters (PSA 10/9, Cardmarket/eBay, EU sellers, buy-now only), sort, search and a Market tab. It works offline with the last scan and can be added to your home screen as an app | `python -m vdf serve` (home network) or GitHub Pages (anywhere) |
+| **Scan now** | A button in the web app that starts a fresh scan | Only available with `serve` |
+
+**Option A: your PC or a Raspberry Pi at home**
+```bash
+python -m vdf serve --scan-every 30 --key choose-a-secret
+# prints e.g. http://192.168.1.20:8000/?key=choose-a-secret
+```
+1. Open that URL on your phone while it's on the same Wi-Fi.
+2. iPhone: tap Share, then **Add to Home Screen**. Android: open the menu, then **Install app**.
+3. The key is remembered, so the home-screen icon opens straight in.
+
+To reach it when you're away from home, use Tailscale or Cloudflare Tunnel. Don't port-forward it.
+
+**Option B: no computer needed (GitHub Actions)**
+
+`.github/workflows/scan.yml` scans every 2 hours in the cloud and sends your alerts.
+1. Add your API keys and Telegram details under *Settings → Secrets and variables → Actions*.
+2. If you also want the web app on GitHub Pages, set the repository variable `PUBLISH_PAGES=true`
+   and choose *Settings → Pages → Source: GitHub Actions*.
+3. To scan on demand from your phone, use **Run workflow** in the GitHub mobile app.
+
+Pages on a private repo needs a paid GitHub plan, and anyone who has the page URL can open it.
+
 ## Setup
 
 ```bash
@@ -39,12 +71,13 @@ cp config.example.yaml config.yaml          # adjust home_country, thresholds
 export MKM_APP_TOKEN=... MKM_APP_SECRET=... MKM_ACCESS_TOKEN=... MKM_ACCESS_SECRET=...
 export EBAY_CLIENT_ID=... EBAY_CLIENT_SECRET=...
 export PRICECHARTING_TOKEN=...              # optional but strongly recommended
-python -m vdf scan                          # -> reports/deals.html + deals.csv
+python -m vdf scan                          # -> reports/index.html (phone web app) + deals.csv
 python -m vdf scan --loop 30                # rescan every 30 min, alerts only on new deals
 python -m vdf scan --demo                   # synthetic data, no keys needed
 python -m vdf targets                       # show the 132 card/variant/grade combos being hunted
 python -m vdf import-csv sold.csv           # add sold comps (130point, PSA APR, Goldin, …)
-python -m unittest                          # 20 tests
+python -m vdf serve --demo                  # try the phone app with synthetic data
+python -m unittest                          # 24 tests
 ```
 
 ## Data sources: what each one gives you and how to get access
@@ -73,6 +106,9 @@ covers **raw** cards only, so it never sets graded FMV. It appears as a context 
 - `vdf/valuation.py` – FMV
 - `vdf/scoring.py` – landed cost and deal rules
 - `vdf/sources/` – one connector per portal
+- `vdf/web/` – the phone web app (single page, home-screen installable, offline cache)
+- `vdf/server.py` – `serve` command: hosts the app with a Scan-now button and an access key
+- `.github/workflows/scan.yml` – scheduled cloud scans, alerts and optional Pages publishing
 - `data/history.sqlite` – sold-comp history that builds up across runs
 
 ## Known limits

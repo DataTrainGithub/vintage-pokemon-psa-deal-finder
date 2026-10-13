@@ -4,8 +4,9 @@ Every key goes into GitHub: open the repo → **Settings → Secrets and variabl
 Secrets → New repository secret**. Use the exact names in **bold**. Add only the sources you
 have; the tool skips any source whose keys are missing.
 
-When at least one data source is set up, delete the repository variable `VDF_DEMO` (Settings →
-Secrets and variables → Actions → Variables) so the app switches from demo data to real data.
+Until at least one data-source key (eBay, Cardmarket or PriceCharting) is set, the app shows
+clearly labelled demo data. After you add a key it switches to real data automatically on the
+next run.
 
 | Source | Cost | What it gives you | Priority |
 |---|---|---|---|

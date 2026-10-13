@@ -5,14 +5,17 @@
 #  - Secrets and variables > Actions > Secrets: MKM_APP_TOKEN, MKM_APP_SECRET, MKM_ACCESS_TOKEN,
 #    MKM_ACCESS_SECRET, EBAY_CLIENT_ID, EBAY_CLIENT_SECRET, PRICECHARTING_TOKEN,
 #    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (and/or DISCORD_WEBHOOK). Set only the ones you have.
-#  - Optional, for the web app on your phone: Variables > PUBLISH_PAGES = true, and
-#    Settings > Pages > Source = "GitHub Actions". Note: Pages on a private repo needs a paid plan,
-#    and the published page is reachable by anyone who has the URL.
+#  - For the web app on your phone: Settings > Pages > Source = "GitHub Actions" (one-time).
+#    Until that is set the deploy job is skipped with a warning; scans and alerts still run.
+#    Pages on a private repo needs a paid plan; the page is reachable by anyone with the URL.
+#  - Until at least one data-source key is set, scans use clearly labelled demo data.
 name: Scan
 
 on:
   schedule:
     - cron: "17 */2 * * *"   # every 2 hours (UTC)
+  push:
+    branches: [main]
   workflow_dispatch:          # "Run workflow" button, also available in the GitHub mobile app
     inputs:
       demo:
@@ -60,11 +63,15 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          VDF_REPORT_URL: ${{ vars.PUBLISH_PAGES == 'true' && format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) || '' }}
         run: |
           CONFIG=config.yaml; [ -f "$CONFIG" ] || CONFIG=config.example.yaml
-          # Demo until real keys are added: set repo variable VDF_DEMO=true, or tick "demo" when running manually.
-          DEMO=""; if [ "${{ inputs.demo }}" = "true" ] || [ "${{ vars.VDF_DEMO }}" = "true" ]; then DEMO="--demo"; fi
+          export VDF_REPORT_URL="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/"
+          DEMO=""
+          if [ "${{ inputs.demo }}" = "true" ] || [ "${{ vars.VDF_DEMO }}" = "true" ]; then DEMO="--demo"; fi
+          if [ -z "$EBAY_CLIENT_ID$MKM_APP_TOKEN$PRICECHARTING_TOKEN" ]; then
+            echo "::notice::No data-source keys set yet; publishing demo data. See docs/API_KEYS.md"
+            DEMO="--demo"
+          fi
           python -m vdf --config "$CONFIG" scan --out site $DEMO
 
       - uses: actions/cache/save@v4
@@ -74,12 +81,11 @@ jobs:
           key: history-${{ github.run_id }}
 
       - uses: actions/upload-pages-artifact@v3
-        if: vars.PUBLISH_PAGES == 'true'
         with:
           path: site
 
   deploy:
-    if: vars.PUBLISH_PAGES == 'true'
+    if: vars.PUBLISH_PAGES != 'false'
     needs: scan
     runs-on: ubuntu-latest
     environment:
@@ -88,3 +94,6 @@ jobs:
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
+        continue-on-error: true   # Pages not switched on yet: don't fail the whole run
+      - if: steps.deploy.outcome == 'failure'
+        run: echo "::warning::Publishing skipped. Turn on Settings > Pages > Source = GitHub Actions, then re-run." 

@@ -53,13 +53,14 @@ python -m vdf serve --scan-every 30 --key choose-a-secret
 
 To reach it when you're away from home, use Tailscale or Cloudflare Tunnel. Don't port-forward it.
 
-**Option B: no computer needed (GitHub Actions)**
+**Option B: no computer needed (GitHub Actions + Pages)**
 
-`.github/workflows/scan.yml` scans every 2 hours in the cloud and sends your alerts.
-1. Add your API keys and Telegram details under *Settings → Secrets and variables → Actions*.
-2. If you also want the web app on GitHub Pages, set the repository variable `PUBLISH_PAGES=true`
-   and choose *Settings → Pages → Source: GitHub Actions*.
-3. To scan on demand from your phone, use **Run workflow** in the GitHub mobile app.
+`.github/workflows/scan.yml` scans every 2 hours in the cloud, sends your alerts and publishes the app.
+1. One time only: open *Settings → Pages* and set *Source* to **GitHub Actions**.
+2. Add your keys under *Settings → Secrets and variables → Actions*. See [docs/API_KEYS.md](docs/API_KEYS.md).
+   Until you do, the app shows clearly labelled demo data.
+3. Open `https://<your-username>.github.io/<repo-name>/` on your phone and add it to your home screen.
+4. To scan on demand, use **Actions → Scan → Run workflow** in the GitHub mobile app.
 
 Pages on a private repo needs a paid GitHub plan, and anyone who has the page URL can open it.
 

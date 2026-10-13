@@ -1,0 +1,60 @@
+# Cards to hunt. Each entry expands to every variant × grade combination.
+# set codes: base1 jungle fossil base2 rocket gym1 gym2 neo1 neo2 neo3 neo4 si lc ecard1 ecard2 ecard3 wotcpromo
+# variants: 1st | shadowless | unlimited  (sets without 1st Ed collapse to unlimited)
+# Combos whose fair value falls outside your price window simply never produce deals, so
+# it is fine to list grades broadly. Double-check card numbers before relying on an entry.
+
+targets:
+  # --- Base Set -------------------------------------------------------------
+  - {name: Charizard,  set: base1, number: 4,  variants: [shadowless, unlimited]}
+  - {name: Blastoise,  set: base1, number: 2,  variants: [1st, shadowless, unlimited]}
+  - {name: Venusaur,   set: base1, number: 15, variants: [1st, shadowless, unlimited]}
+  - {name: Alakazam,   set: base1, number: 1,  variants: [1st, shadowless]}
+  - {name: Chansey,    set: base1, number: 3,  variants: [1st, shadowless]}
+  - {name: Clefairy,   set: base1, number: 5,  variants: [1st, shadowless]}
+  - {name: Gyarados,   set: base1, number: 6,  variants: [1st, shadowless]}
+  - {name: Hitmonchan, set: base1, number: 7,  variants: [1st, shadowless]}
+  - {name: Magneton,   set: base1, number: 9,  variants: [1st, shadowless]}
+  - {name: Mewtwo,     set: base1, number: 10, variants: [1st, shadowless]}
+  - {name: Nidoking,   set: base1, number: 11, variants: [1st, shadowless]}
+  - {name: Ninetales,  set: base1, number: 12, variants: [1st, shadowless]}
+  - {name: Poliwrath,  set: base1, number: 13, variants: [1st, shadowless]}
+  - {name: Raichu,     set: base1, number: 14, variants: [1st, shadowless]}
+  - {name: Zapdos,     set: base1, number: 16, variants: [1st, shadowless]}
+
+  # --- Jungle / Fossil 1st Edition holos ------------------------------------
+  - {name: Scyther,    set: jungle, number: 10, variants: [1st]}
+  - {name: Vaporeon,   set: jungle, number: 12, variants: [1st]}
+  - {name: Jolteon,    set: jungle, number: 4,  variants: [1st]}
+  - {name: Flareon,    set: jungle, number: 3,  variants: [1st]}
+  - {name: Snorlax,    set: jungle, number: 11, variants: [1st]}
+  - {name: Gengar,     set: fossil, number: 5,  variants: [1st]}
+  - {name: Dragonite,  set: fossil, number: 4,  variants: [1st]}
+  - {name: Moltres,    set: fossil, number: 12, variants: [1st]}
+  - {name: Articuno,   set: fossil, number: 2,  variants: [1st]}
+  - {name: Zapdos,     set: fossil, number: 15, variants: [1st]}
+  - {name: Lapras,     set: fossil, number: 10, variants: [1st]}
+
+  # --- Team Rocket / Gym -----------------------------------------------------
+  - {name: Dark Charizard,    set: rocket, number: 4,  variants: [1st, unlimited]}
+  - {name: Dark Blastoise,    set: rocket, number: 3,  variants: [1st]}
+  - {name: Dark Dragonite,    set: rocket, number: 5,  variants: [1st]}
+  - {name: Dark Raichu,       set: rocket, number: 83, variants: [1st]}
+  - {name: Blaine's Charizard, set: gym2,  number: 2,  variants: [1st, unlimited]}
+  - {name: Sabrina's Gengar,  set: gym1,   number: 14, variants: [1st]}
+
+  # --- Neo ------------------------------------------------------------------
+  - {name: Lugia,            set: neo1, number: 9,   variants: [1st, unlimited], grades: [9]}
+  - {name: Typhlosion,       set: neo1, number: 17,  variants: [1st]}
+  - {name: Espeon,           set: neo2, number: 1,   variants: [1st]}
+  - {name: Umbreon,          set: neo2, number: 13,  variants: [1st]}
+  - {name: Ho-Oh,            set: neo3, number: 7,   variants: [1st]}
+  - {name: Shining Gyarados, set: neo3, number: 65,  variants: [1st, unlimited]}
+  - {name: Shining Charizard, set: neo4, number: 107, variants: [1st, unlimited]}
+  - {name: Shining Mewtwo,   set: neo4, number: 109, variants: [1st, unlimited]}
+  - {name: Shining Tyranitar, set: neo4, number: 113, variants: [1st, unlimited]}
+
+  # --- e-Card ---------------------------------------------------------------
+  - {name: Charizard,  set: ecard1, number: 6,   grades: [9, 10]}
+  - {name: Charizard,  set: ecard3, number: 146, grades: [9]}
+  - {name: Lugia,      set: ecard2, number: 149, grades: [9]}

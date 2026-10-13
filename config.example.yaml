@@ -1,0 +1,64 @@
+# Copy to config.yaml and fill in. ${ENV_VARS} are expanded, so secrets can live in the environment.
+
+database: data/history.sqlite
+imports_dir: imports          # every *.csv here is imported on each scan (sold comps from 130point, PSA APR, auctions...)
+grades: [9, 10]               # default grades when a watchlist entry doesn't specify
+
+deals:
+  price_min: 1000             # landed cost window, in fx.base currency
+  price_max: 10000
+  min_discount: 0.20          # report listings ≥20% under fair market value
+  max_discount: 0.70          # anything cheaper than this is almost always fake / mis-parsed / scam
+  min_confidence: low         # low | medium | high
+  include_auctions: true
+  home_country: NL            # used for import VAT on non-EU listings (US, UK, JP...)
+  import_vat_rate: 0.21       # NL/BE 21%; DE 19%; FR 20% ... (EU reduced rate may apply to collectors' items, check yours)
+  import_handling_fee: 20     # courier customs clearance fee (EUR)
+  buyer_fee_pct:              # extra % on top of price per source
+    cardmarket: 0.0
+    ebay: 0.0
+
+valuation:
+  lookback_days: 180
+  half_life_days: 45          # a 45-day-old sale counts half as much as today's
+  guide_weight: 0.5           # PriceCharting guide counts as half a fresh sale
+
+fx:
+  base: EUR
+  live: true                  # ECB rates via frankfurter.app, falls back to the rates below
+  fallback_rates:             # EUR per 1 unit
+    USD: 0.86
+    GBP: 1.16
+    JPY: 0.0057
+
+cardmarket:                   # PRIMARY source. Needs a "Dedicated App" (Account > Settings > API)
+  enabled: true
+  app_token: ${MKM_APP_TOKEN}
+  app_secret: ${MKM_APP_SECRET}
+  access_token: ${MKM_ACCESS_TOKEN}
+  access_secret: ${MKM_ACCESS_SECRET}
+  fetch_raw_trend: true       # show Cardmarket's raw (ungraded) TREND next to graded FMV
+  min_request_interval: 0.5
+
+ebay:                         # active listings via Browse API; sold via Marketplace Insights if approved
+  enabled: true
+  client_id: ${EBAY_CLIENT_ID}
+  client_secret: ${EBAY_CLIENT_SECRET}
+  marketplace: EBAY_US        # EBAY_DE / EBAY_GB / EBAY_NL for EU-located stock
+  use_marketplace_insights: true
+  search_price_min: 600       # broad pre-filter (search currency); exact window is applied after costs
+  search_price_max: 14000
+  search_currency: USD
+  min_request_interval: 0.3
+
+pricecharting:                # graded guide prices (paid subscription API token)
+  enabled: true
+  token: ${PRICECHARTING_TOKEN}
+  min_request_interval: 1.0
+
+alerts:                       # optional push notifications for new deals
+  min_score: 0.2
+  min_confidence: medium      # don't push thin-comp deals to your phone
+  discord_webhook: ${DISCORD_WEBHOOK}
+  telegram_bot_token: ${TELEGRAM_BOT_TOKEN}
+  telegram_chat_id: ${TELEGRAM_CHAT_ID}

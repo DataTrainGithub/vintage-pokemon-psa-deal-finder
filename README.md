@@ -1,5 +1,7 @@
 # Vintage PSA Deal Finder
 
+📱 **Open the app:** https://datatraingithub.github.io/vintage-pokemon-psa-deal-finder/ (add it to your home screen)
+
 Finds **vintage (WotC 1999–2003) English Pokémon cards in PSA 9 / PSA 10** that are listed well
 below their current market value, in a **€1,000–€10,000** window. Cardmarket is the main listing
 source, eBay is the second, and fair value comes from sold comps.

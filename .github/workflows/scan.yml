@@ -14,6 +14,11 @@ on:
   schedule:
     - cron: "17 */2 * * *"   # every 2 hours (UTC)
   workflow_dispatch:          # "Run workflow" button, also available in the GitHub mobile app
+    inputs:
+      demo:
+        description: "Use made-up demo data (no API keys needed)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -58,7 +63,9 @@ jobs:
           VDF_REPORT_URL: ${{ vars.PUBLISH_PAGES == 'true' && format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) || '' }}
         run: |
           CONFIG=config.yaml; [ -f "$CONFIG" ] || CONFIG=config.example.yaml
-          python -m vdf --config "$CONFIG" scan --out site
+          # Demo until real keys are added: set repo variable VDF_DEMO=true, or tick "demo" when running manually.
+          DEMO=""; if [ "${{ inputs.demo }}" = "true" ] || [ "${{ vars.VDF_DEMO }}" = "true" ]; then DEMO="--demo"; fi
+          python -m vdf --config "$CONFIG" scan --out site $DEMO
 
       - uses: actions/cache/save@v4
         if: always()

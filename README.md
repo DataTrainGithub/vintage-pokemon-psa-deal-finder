@@ -65,6 +65,8 @@ Pages on a private repo needs a paid GitHub plan, and anyone who has the page UR
 
 ## Setup
 
+**Getting API keys:** see [docs/API_KEYS.md](docs/API_KEYS.md) for step-by-step instructions for eBay, Cardmarket, PriceCharting, Telegram and Discord.
+
 ```bash
 pip install -r requirements.txt
 cp config.example.yaml config.yaml          # adjust home_country, thresholds

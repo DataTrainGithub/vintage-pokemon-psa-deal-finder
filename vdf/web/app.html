@@ -79,6 +79,7 @@ details p{margin:4px 0;word-break:break-word}
 .mrow{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
 .mrow .r{text-align:right;font-variant-numeric:tabular-nums}
 .mrow .vs{font-size:13px}.vs.good{color:var(--good);font-weight:700}
+.demo{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px}
 .empty{text-align:center;color:var(--muted);padding:40px 16px}
 .toast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;background:var(--fg);color:var(--bg);
   border-radius:12px;padding:12px 14px;font-size:14px;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
@@ -99,6 +100,7 @@ footer{font-size:12px;color:var(--muted);padding:8px 16px 0;max-width:980px;marg
   </div>
 </div></header>
 <main class="wrap">
+  <div class="demo" id="demo" hidden><b>Demo data.</b> These prices are made up to show how the app works. Add your API keys to see real deals.</div>
   <div class="tools">
     <input id="q" type="search" placeholder="Search card or set" autocomplete="off" enterkeyhint="search">
     <select id="sort" aria-label="Sort"></select>
@@ -229,6 +231,7 @@ $('#reload').onclick = () => location.reload();
 })();
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
+if (D.demo) $('#demo').hidden = false;
 header(); render();
 </script>
 </body>

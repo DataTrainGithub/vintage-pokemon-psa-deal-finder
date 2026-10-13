@@ -103,7 +103,7 @@ def scan_once(cfg: dict, watch: list, demo: bool, out: Path, verbose: bool = Fal
     store = Store(cfg.get("database", "data/history.sqlite"))
     res = run(cfg, watch, demo=demo, store=store)
     base = cfg.get("fx", {}).get("base", "EUR")
-    page = report.write_html(res, out, cfg.get("deals", {}), base)
+    page = report.write_html(res, out, cfg.get("deals", {}), base, demo)
     report.write_csv(res, out / "deals.csv")
     if verbose:
         print(report.console(res))

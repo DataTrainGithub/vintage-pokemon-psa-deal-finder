@@ -68,7 +68,7 @@ def _iso(dt):
     return dt.isoformat() if dt else None
 
 
-def web_data(res: ScanResult, deal_cfg: dict, base: str) -> dict:
+def web_data(res: ScanResult, deal_cfg: dict, base: str, demo: bool = False) -> dict:
     raw = {m.target.key: m.raw_trend for m in res.market}
     deals = []
     for d in res.deals:
@@ -89,15 +89,15 @@ def web_data(res: ScanResult, deal_cfg: dict, base: str) -> dict:
                        "vs": round(c.discount, 4) if c else None, "url": c.listing.url if c else None,
                        "raw": m.raw_trend})
     cfg = {"price_min": 1000, "price_max": 10000, "min_discount": 0.2, **deal_cfg}
-    return {"scanned": res.started.isoformat(), "base": base, "deals": deals, "market": market,
+    return {"scanned": res.started.isoformat(), "base": base, "demo": demo, "deals": deals, "market": market,
             "cfg": {k: cfg[k] for k in ("price_min", "price_max", "min_discount")}}
 
 
-def write_html(res: ScanResult, out_dir: Path, deal_cfg: dict, base: str) -> Path:
+def write_html(res: ScanResult, out_dir: Path, deal_cfg: dict, base: str, demo: bool = False) -> Path:
     """Write the phone-friendly web app (index.html + PWA files) into out_dir."""
     out_dir.mkdir(parents=True, exist_ok=True)
     env = Environment(autoescape=True)
-    page = env.from_string((WEB / "app.html").read_text()).render(data=web_data(res, deal_cfg, base))
+    page = env.from_string((WEB / "app.html").read_text()).render(data=web_data(res, deal_cfg, base, demo))
     tmp = out_dir / "index.html.tmp"
     tmp.write_text(page)
     tmp.replace(out_dir / "index.html")  # atomic, so a phone never loads a half-written page
